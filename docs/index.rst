@@ -68,8 +68,8 @@ default *action name* of a handler view callable.
 
 The concept of a view handler is analogous to a "controller" in Pylons 1.0.
 
-The view handler class is initialized by :app:`Pyramid` in the same manner as
-a "plain" view class.  Its ``__init__`` is called with a request object (see
+The view handler class is initialized by Pyramid in the same manner as a
+"plain" view class.  Its ``__init__`` is called with a request object (see
 :ref:`class_as_view`).  It implements methods, each of which is a :term:`view
 callable`.  When a request enters the system which corresponds with an
 *action* related to one of its view callable methods, this method is called,
@@ -310,9 +310,19 @@ or some sort of callable instance.
 
    In a Pylons 1.0 controller, it was possible to override the ``__call__()``
    method, which allowed a developer to "wrap" the entire action invocation,
-   with a try/except or any other arbitrary code.  In :app:`Pyramid`, this
+   with a try/except or any other arbitrary code.  In Pyramid, this
    can be emulated with the use of an ``__action_decorator__`` classmethod
    on your handler class.
+
+More Information
+----------------
+
+.. toctree::
+   :maxdepth: 1
+
+   api.rst
+   glossary.rst
+
 
 Reporting Bugs / Development Versions
 -------------------------------------

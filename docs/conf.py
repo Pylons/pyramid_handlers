@@ -41,7 +41,9 @@ extensions = [
     ]
 
 # Looks for pyramid's objects
-intersphinx_mapping = {'http://docs.pylonshq.com/pyramid/dev': None}
+intersphinx_mapping = {
+    'pyramid':
+    ('http://docs.pylonsproject.org/projects/pyramid/dev/', None)}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['.templates']
