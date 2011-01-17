@@ -1,0 +1,15 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:meta="http://namespaces.zope.org/meta">
+
+  <meta:directives namespace="http://pylonshq.com/pyramid">
+
+    <meta:directive
+        name="handler"
+        schema="pyramid_handlers.zcml.IHandlerDirective"
+        handler="pyramid_handlers.zcml.handler"
+        />
+
+  </meta:directives>
+
+</configure>

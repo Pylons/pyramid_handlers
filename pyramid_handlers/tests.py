@@ -2,10 +2,10 @@ import unittest
 from pyramid import testing
 
 class Test_add_handler(unittest.TestCase):
-    def _makeOne(self):
+    def _makeOne(self, autocommit=True):
         from pyramid.config import Configurator
         from pyramid_handlers import add_handler
-        config = Configurator(autocommit=True)
+        config = Configurator(autocommit=autocommit)
         config.add_directive('add_handler', add_handler)
         return config
         
@@ -292,6 +292,30 @@ class Test_add_handler(unittest.TestCase):
         self.assertEqual(len(routes[0].predicates), num_predicates)
         return route
 
+    def test_conflict_add_handler(self):
+        class AHandler(object):
+            def aview(self): pass
+        from zope.configuration.config import ConfigurationConflictError
+        config = self._makeOne(autocommit=False)
+        config.add_handler('h1', '/h1', handler=AHandler)
+        config.add_handler('h1', '/h1', handler=AHandler)
+        try:
+            config.commit()
+        except ConfigurationConflictError, why:
+            c1, c2, c3, c4 = self._conflictFunctions(why)
+            self.assertEqual(c1, 'test_conflict_add_handler')
+            self.assertEqual(c2, 'test_conflict_add_handler')
+            self.assertEqual(c3, 'test_conflict_add_handler')
+            self.assertEqual(c3, 'test_conflict_add_handler')
+        else: # pragma: no cover
+            raise AssertionError
+
+    def _conflictFunctions(self, e):
+        conflicts = e._conflicts.values()
+        for conflict in conflicts:
+            for confinst in conflict:
+                yield confinst[2]
+
 class TestActionPredicate(unittest.TestCase):
     def _getTargetClass(self):
         from pyramid_handlers import ActionPredicate
@@ -369,6 +393,87 @@ class Test_action(unittest.TestCase):
         self.failUnless(result is wrapped)
         self.assertEqual(result.__exposed__, [None, {'a':1, 'b':2}])
 
+class TestHandlerDirective(unittest.TestCase):
+    def setUp(self):
+        self.config = testing.setUp(autocommit=False)
+        self.config._ctx = self.config._make_context()
+
+    def tearDown(self):
+        testing.tearDown()
+
+    def _callFUT(self, *arg, **kw):
+        from pyramid_handlers.zcml import handler
+        return handler(*arg, **kw)
+
+    def _assertRoute(self, name, pattern, num_predicates=0):
+        from pyramid.interfaces import IRoutesMapper
+        reg = self.config.registry
+        mapper = reg.getUtility(IRoutesMapper)
+        routes = mapper.get_routes()
+        route = routes[0]
+        self.assertEqual(len(routes), 1)
+        self.assertEqual(route.name, name)
+        self.assertEqual(route.pattern, pattern)
+        self.assertEqual(len(routes[0].predicates), num_predicates)
+        return route
+
+    def test_it(self):
+        from pyramid_handlers import action
+        from zope.interface import Interface
+        from pyramid.interfaces import IView
+        from pyramid.interfaces import IViewClassifier
+        from pyramid.interfaces import IRouteRequest
+        reg = self.config.registry
+        context = self.config._ctx
+        class Handler(object): # pragma: no cover
+            def __init__(self, request):
+                self.request = request
+            action(renderer='json')
+            def one(self):
+                return 'OK'
+            action(renderer='json')
+            def two(self):
+                return 'OK'
+        self._callFUT(context, 'name', '/:action', Handler)
+        actions = extract_actions(context.actions)
+        self.assertEqual(len(actions), 3)
+
+        route_action = actions[0]
+        route_discriminator = route_action['discriminator']
+        self.assertEqual(route_discriminator,
+                         ('route', 'name', False, None, None, None, None,None))
+        self._assertRoute('name', '/:action')
+
+        view_action = actions[1]
+        request_type = reg.getUtility(IRouteRequest, 'name')
+        view_discriminator = view_action['discriminator']
+        discrim = ('view', None, '', None, IView, None, None, None, 'name',
+                   'one', False, None, None, None)
+        self.assertEqual(view_discriminator[:14], discrim)
+        view_action['callable'](*view_action['args'], **view_action['kw'])
+
+        view_action = actions[2]
+        request_type = reg.getUtility(IRouteRequest, 'name')
+        view_discriminator = view_action['discriminator']
+        discrim = ('view', None, '', None, IView, None, None, None, 'name',
+                   'two', False, None, None, None)
+        self.assertEqual(view_discriminator[:14], discrim)
+        view_action['callable'](*view_action['args'], **view_action['kw'])
+
+        wrapped = reg.adapters.lookup(
+            (IViewClassifier, request_type, Interface), IView, name='')
+        self.failUnless(wrapped)
+
+    def test_pattern_is_None(self):
+        from pyramid.exceptions import ConfigurationError
+
+        context = self.config._ctx
+        class Handler(object):
+            pass
+        self.assertRaises(ConfigurationError, self._callFUT,
+                          context, 'name', None, Handler)
+
+
 class Test_includeme(unittest.TestCase):
     def test_it(self):
         from pyramid.config import Configurator
@@ -376,7 +481,7 @@ class Test_includeme(unittest.TestCase):
         from pyramid_handlers import includeme
         c = Configurator(autocommit=True)
         c.include(includeme)
-        self.failUnless(c.add_handler.im_func is add_handler)
+        self.failUnless(c.add_handler.im_func.__docobj__ is add_handler)
 
 class DummyHandler(object): # pragma: no cover
     def __init__(self, request):
@@ -387,3 +492,18 @@ class DummyHandler(object): # pragma: no cover
 
     def action2(self):
         return 'response 2'
+
+def extract_actions(native):
+    from zope.configuration.config import expand_action
+    L = []
+    for action in native:
+        (discriminator, callable, args, kw, includepath, info, order
+         ) = expand_action(*action)
+        d = {}
+        d['discriminator'] = discriminator
+        d['callable'] = callable
+        d['args'] = args
+        d['kw'] = kw
+        d['order'] = order
+        L.append(d)
+    return L

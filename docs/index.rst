@@ -322,6 +322,7 @@ More Information
 
    api.rst
    glossary.rst
+   zcml.rst
 
 
 Reporting Bugs / Development Versions
