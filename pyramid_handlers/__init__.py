@@ -160,7 +160,20 @@ class ActionPredicate(object):
         # others that share the same action name
         return hash(self.action)
 
+
 class action(object):
+    """Decorate a method for registration by 
+    :func:`~pyramid_handlers.add_handler`.
+    
+    Keyword arguments are identical to :class:`~pyramid.view.view_config`, with
+    the exception to how the ``name`` argument is used.
+    
+    ``name``
+        Designate an alternate action name, rather than the default behavior
+        of registering a view with the action name being set to the methods
+        name.
+    
+    """
     def __init__(self, **kw):
         self.kw = kw
 
@@ -170,6 +183,7 @@ class action(object):
         else:
             wrapped.__exposed__ = [self.kw]
         return wrapped
+
 
 def includeme(config):
     config.add_directive('add_handler', add_handler)
