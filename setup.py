@@ -1,6 +1,6 @@
 ##############################################################################
 #
-# Copyright (c) 2008-2010 Agendaless Consulting and Contributors.
+# Copyright (c) 2008-2011 Agendaless Consulting and Contributors.
 # All Rights Reserved.
 #
 # This software is subject to the provisions of the BSD-like license at
@@ -38,7 +38,7 @@ else:
 
 setup(name='pyramid_handlers',
       version=__version__,
-      description='Experimental handler support for Pyramid',
+      description='Pyramid handlers emulate Pylons 1 controllers',
       long_description=README + '\n\n' +  CHANGES,
       classifiers=[
         "Intended Audience :: Developers",
