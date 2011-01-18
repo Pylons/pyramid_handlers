@@ -1,4 +1,4 @@
-from pyramid.zcml import IRouteLikeDirective
+from pyramid_zcml import IRouteLikeDirective
 
 from zope.schema import TextLine
 from zope.configuration.fields import GlobalObject

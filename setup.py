@@ -27,7 +27,7 @@ except IOError:
     README = CHANGES = ''
 
 install_requires=[
-    'pyramid',
+    'pyramid', 'pyramid_zcml',
     ]
 
 if platform.system() == 'Java':
