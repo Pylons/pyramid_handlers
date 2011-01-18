@@ -188,3 +188,24 @@ Glossary
      Python standard for connecting web applications to web servers,
      similar to the concept of Java Servlets.  Pyramid requires
      that your application be served as a WSGI application.
+
+   dotted Python name
+     A reference to a Python object by name using a string, in the form
+     ``path.to.modulename:attributename``.  Often used in Paste and
+     setuptools configurations.  A variant is used in dotted names within
+     configurator method arguments that name objects (such as the "add_view"
+     method's "view" and "context" attributes): the colon (``:``) is not
+     used; in its place is a dot.
+
+   ZCML directive
+     A ZCML "tag" such as ``<view>``, ``<route>``, or ``<handler>``.
+
+   ZCML declaration
+     The concrete use of a :term:`ZCML directive` within a ZCML file.
+
+   application registry
+     A registry of configuration information consulted by Pyramid while
+     servicing an application.  An application registry maps resource types
+     to views, as well as housing other application-specific component
+     registrations.  Every Pyramid application has one (and only one)
+     application registry.

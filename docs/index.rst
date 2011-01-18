@@ -321,8 +321,8 @@ More Information
    :maxdepth: 1
 
    api.rst
-   glossary.rst
    zcml.rst
+   glossary.rst
 
 
 Reporting Bugs / Development Versions

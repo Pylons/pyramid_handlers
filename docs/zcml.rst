@@ -1,7 +1,7 @@
 .. _zcml_handler_configuration:
 
 Configuring a Handler via ZCML
-------------------------------
+==============================
 
 Instead of using the imperative
 :meth:`pyramid.config.Configurator.add_handler` method to add a new
@@ -87,7 +87,7 @@ Attributes
 
 ``factory``
   The :term:`dotted Python name` to a function that will generate a
-  :app:`Pyramid` context object when the associated route matches.
+  Pyramid context object when the associated route matches.
   e.g. ``mypackage.resources.MyResource``.  If this argument is not
   specified, a default root factory will be used.
 
