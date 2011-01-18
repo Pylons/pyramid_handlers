@@ -12,8 +12,6 @@
 #
 ##############################################################################
 
-__version__ = '0.0'
-
 import os
 import platform
 
@@ -27,7 +25,7 @@ except IOError:
     README = CHANGES = ''
 
 install_requires=[
-    'pyramid', 'pyramid_zcml',
+    'pyramid>=1.0a10', 'pyramid_zcml',
     ]
 
 if platform.system() == 'Java':
@@ -37,7 +35,7 @@ else:
                                        'repoze.sphinx.autointerface']
 
 setup(name='pyramid_handlers',
-      version=__version__,
+      version='0.1',
       description='Pyramid handlers emulate Pylons 1 controllers',
       long_description=README + '\n\n' +  CHANGES,
       classifiers=[

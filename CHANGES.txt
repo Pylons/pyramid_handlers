@@ -1,5 +1,6 @@
-Next release
-============
+0.1 (2011-01-18)
+----------------
 
-- ...
+- Initial release, broken out of Pyramid core.
+
 

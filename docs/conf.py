@@ -56,13 +56,13 @@ master_doc = 'index'
 
 # General substitutions.
 project = 'pyramid_handlers'
-copyright = '2010, Agendaless Consulting <chrism@plope.com>'
+copyright = '2011, Agendaless Consulting <chrism@plope.com>'
 
 # The default replacements for |version| and |release|, also used in various
 # other places throughout the built documents.
 #
 # The short X.Y version.
-version = '0.4'
+version = '0.1'
 # The full version, including alpha/beta/rc tags.
 release = version
 
@@ -104,7 +104,7 @@ pygments_style = 'sphinx'
 # Add and use Pylons theme
 sys.path.append(os.path.abspath('_themes'))
 html_theme_path = ['_themes']
-html_theme = 'pylons'
+html_theme = 'pyramid'
 
 # The style sheet to use for HTML and HTML Help pages. A file of that name
 # must exist either in Sphinx' static/ path, or in one of the custom paths
