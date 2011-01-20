@@ -286,6 +286,14 @@ call the same method and render the ``about.mak`` template.
 Handler ``__action_decorator__`` Attribute
 ------------------------------------------
 
+.. note::
+
+   In a Pylons 1.0 controller, it was possible to override the ``__call__()``
+   method, which allowed a developer to "wrap" the entire action invocation,
+   with a try/except or any other arbitrary code.  In Pyramid, this
+   can be emulated with the use of an ``__action_decorator__`` classmethod
+   on your handler class.
+
 If a handler class has an ``__action_decorator__`` attribute, then the
 value of the class attribute will be passed in as the ``decorator``
 argument every time a handler action is registered as a view callable.
@@ -304,13 +312,40 @@ result in a :exc:`ConfigurationError`.  Instead, ``__action_decorator__``
 can be any other type of callable: a staticmethod, classmethod, function,
 or some sort of callable instance.
 
-.. note::
+The below example uses an ``__action_decorator__`` which is a staticmethod of
+the handler class.  It wraps every view callable implied by the handler in a
+decorator function which calls the original view callable, but catches a
+special exception and returns a response.
 
-   In a Pylons 1.0 controller, it was possible to override the ``__call__()``
-   method, which allowed a developer to "wrap" the entire action invocation,
-   with a try/except or any other arbitrary code.  In Pyramid, this
-   can be emulated with the use of an ``__action_decorator__`` classmethod
-   on your handler class.
+.. code-block:: python
+   :linenos:
+
+   from pyramid_handlers import action
+   from pyramid.response import Response
+
+   class MySpecialException(Exception):
+       pass
+
+   class MyHandler(object):
+       def __init__(self, request):
+           self.request = request
+
+       @staticmethod
+       def __action_decorator__(view):
+           def decorated_view(context, request):
+               try:
+                   return view(context, request)
+               except MySpecialException:
+                   return Response('Something bad happened', status=500)
+           return decorated_view
+
+       @action(renderer='index.html')
+       def index(self):
+           raise MySpecialException
+
+When the ``index`` method of the above example handler is invoked, it will
+raise ``MySpecialException``.  As a result, the action decorator will cath
+this exception and turn it into a response.
 
 More Information
 ----------------
