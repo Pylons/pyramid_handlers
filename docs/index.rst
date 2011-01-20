@@ -27,10 +27,8 @@ Pyramid project's ``__init__.py``:
 .. code-block:: python
    :linenos:
 
-   import pyramid_handlers
-
    config = Configurator(.....)
-   config.include(pyramid_handlers.includeme)
+   config.include('pyramid_handlers')
 
 At this point, it will be possible to use the
 :func:`pyramid_handlers.add_handler` function as a method of the
