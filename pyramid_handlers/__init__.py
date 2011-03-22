@@ -126,13 +126,13 @@ def locate_view_by_name(config, handler, route_name, action_decorator, name):
         method_name = '__call__'
     
     # Scan the controller for any other methods with this action name
-    for meth_name, method in inspect.getmembers(
+    for attr, method in inspect.getmembers(
         handler, inspect.ismethod):
         configs = getattr(method, '__exposed__', [{}])
         for expose_config in configs:
             # Don't re-register the same view if this method name is
             # the action name
-            if meth_name == name:
+            if attr == name:
                 continue
             # We only reg a view if the name matches the action
             if expose_config.get('name') != method_name:
@@ -141,7 +141,7 @@ def locate_view_by_name(config, handler, route_name, action_decorator, name):
             # so we copy each
             view_args = expose_config.copy()
             del view_args['name']
-            config.add_view(view=handler, attr=meth_name,
+            config.add_view(view=handler, attr=attr,
                             route_name=route_name,
                             decorator=action_decorator, **view_args)
 
