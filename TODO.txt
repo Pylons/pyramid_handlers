@@ -1,0 +1,15 @@
+def url_for(request, *elements, **kw):
+    handler = kw.pop('handler')
+    # do what with handler?
+
+    # find all routes registered with handler=somehandler
+
+    # iterate over them finding the "best match" (guessy)
+    
+    # retrieve any routes that were registered via "add_handler"
+    # that routed to the handler class, do some *waves hands*
+    # iteration through them to do a "best guess" match from
+    # the union of all of the routes based on the other provided
+    # url_for parameters.
+    return route_url(request, *elements, **kw)
+
