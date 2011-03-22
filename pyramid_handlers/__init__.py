@@ -99,8 +99,7 @@ def scan_handler(config, handler, route_name, action_decorator):
             autoexpose = re.compile(autoexpose).match
         except (re.error, TypeError), why:
             raise ConfigurationError(why[0])
-    for method_name, method in inspect.getmembers(
-        handler, inspect.ismethod):
+    for method_name, method in inspect.getmembers(handler, inspect.ismethod):
         configs = getattr(method, '__exposed__', [])
         if autoexpose and not configs:
             if autoexpose(method_name):
@@ -126,8 +125,7 @@ def locate_view_by_name(config, handler, route_name, action_decorator, name):
         method_name = '__call__'
     
     # Scan the controller for any other methods with this action name
-    for attr, method in inspect.getmembers(
-        handler, inspect.ismethod):
+    for attr, method in inspect.getmembers(handler, inspect.ismethod):
         configs = getattr(method, '__exposed__', [{}])
         for expose_config in configs:
             # Don't re-register the same view if this method name is
