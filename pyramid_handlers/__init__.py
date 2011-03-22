@@ -79,62 +79,79 @@ def add_handler(self, route_name, pattern, handler, action=None, **kw):
             'path %r' % (action, pattern))
 
     if path_has_action:
-        autoexpose = getattr(handler, '__autoexpose__', r'[A-Za-z]+')
-        if autoexpose:
-            try:
-                autoexpose = re.compile(autoexpose).match
-            except (re.error, TypeError), why:
-                raise ConfigurationError(why[0])
-        for method_name, method in inspect.getmembers(
-            handler, inspect.ismethod):
-            configs = getattr(method, '__exposed__', [])
-            if autoexpose and not configs:
-                if autoexpose(method_name):
-                    configs = [{}]
-            for expose_config in configs:
-                # we don't want to mutate any dict in __exposed__,
-                # so we copy each
-                view_args = expose_config.copy()
-                action = view_args.pop('name', method_name)
-                preds = list(view_args.pop('custom_predicates', []))
-                preds.append(ActionPredicate(action))
-                view_args['custom_predicates'] = preds
-                self.add_view(view=handler, attr=method_name,
-                              route_name=route_name,
-                              decorator=action_decorator, **view_args)
+        scan_handler(self, handler, route_name, action_decorator)
     else:
-        method_name = action
-        if method_name is None:
-            method_name = '__call__'
+        locate_view_by_name(
+            config=self,
+            handler=handler,
+            route_name=route_name,
+            action_decorator=action_decorator,
+            name=action
+        )
+    return route
 
-        # Scan the controller for any other methods with this action name
-        for meth_name, method in inspect.getmembers(
-            handler, inspect.ismethod):
-            configs = getattr(method, '__exposed__', [{}])
-            for expose_config in configs:
-                # Don't re-register the same view if this method name is
-                # the action name
-                if meth_name == action:
-                    continue
-                # We only reg a view if the name matches the action
-                if expose_config.get('name') != method_name:
-                    continue
-                # we don't want to mutate any dict in __exposed__,
-                # so we copy each
-                view_args = expose_config.copy()
-                del view_args['name']
-                self.add_view(view=handler, attr=meth_name,
-                              route_name=route_name,
-                              decorator=action_decorator, **view_args)
 
-        # Now register the method itself
-        method = getattr(handler, method_name, None)
+def scan_handler(config, handler, route_name, action_decorator):
+    """Scan a handler for automatically exposed views to register"""
+    autoexpose = getattr(handler, '__autoexpose__', r'[A-Za-z]+')
+    if autoexpose:
+        try:
+            autoexpose = re.compile(autoexpose).match
+        except (re.error, TypeError), why:
+            raise ConfigurationError(why[0])
+    for method_name, method in inspect.getmembers(
+        handler, inspect.ismethod):
+        configs = getattr(method, '__exposed__', [])
+        if autoexpose and not configs:
+            if autoexpose(method_name):
+                configs = [{}]
+        for expose_config in configs:
+            # we don't want to mutate any dict in __exposed__,
+            # so we copy each
+            view_args = expose_config.copy()
+            action = view_args.pop('name', method_name)
+            preds = list(view_args.pop('custom_predicates', []))
+            preds.append(ActionPredicate(action))
+            view_args['custom_predicates'] = preds
+            config.add_view(view=handler, attr=method_name,
+                            route_name=route_name,
+                            decorator=action_decorator, **view_args)
+
+
+def locate_view_by_name(config, handler, route_name, action_decorator, name):
+    """Locate and add all the views in a handler with the matching name, or
+    the method itself if it exists."""
+    method_name = name
+    if method_name is None:
+        method_name = '__call__'
+    
+    # Scan the controller for any other methods with this action name
+    for meth_name, method in inspect.getmembers(
+        handler, inspect.ismethod):
         configs = getattr(method, '__exposed__', [{}])
         for expose_config in configs:
-            self.add_view(view=handler, attr=action, route_name=route_name,
-                          decorator=action_decorator, **expose_config)
+            # Don't re-register the same view if this method name is
+            # the action name
+            if meth_name == name:
+                continue
+            # We only reg a view if the name matches the action
+            if expose_config.get('name') != method_name:
+                continue
+            # we don't want to mutate any dict in __exposed__,
+            # so we copy each
+            view_args = expose_config.copy()
+            del view_args['name']
+            config.add_view(view=handler, attr=meth_name,
+                            route_name=route_name,
+                            decorator=action_decorator, **view_args)
 
-    return route
+    # Now register the method itself
+    method = getattr(handler, method_name, None)
+    if method:
+        configs = getattr(method, '__exposed__', [{}])
+        for expose_config in configs:
+            config.add_view(view=handler, attr=name, route_name=route_name,
+                            decorator=action_decorator, **expose_config)
 
 
 class ActionPredicate(object):

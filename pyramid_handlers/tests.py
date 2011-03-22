@@ -254,11 +254,13 @@ class Test_add_handler(unittest.TestCase):
         config = self._makeOne()
         def dummy_add_view(**kw):
             views.append(kw)
+        class DummyHandler(object):
+            def one(self): pass
         config.add_view = dummy_add_view
-        config.add_handler('name', '/abc', 'pyramid')
+        config.add_handler('name', '/abc', DummyHandler)
         self.assertEqual(len(views), 1)
         view = views[0]
-        self.assertEqual(view['view'], pyramid)
+        self.assertEqual(view['view'], DummyHandler)
 
     def test_add_handler_pattern_None_no_previous_route(self):
         from pyramid.exceptions import ConfigurationError
@@ -273,13 +275,27 @@ class Test_add_handler(unittest.TestCase):
         views = []
         def dummy_add_view(**kw):
             views.append(kw)
+        class DummyHandler(object):
+            def one(self): pass
         config.add_view = dummy_add_view
         config.add_route = None # shouldn't be called
-        config.add_handler('name', None, 'pyramid')
+        config.add_handler('name', None, DummyHandler)
         self.assertEqual(len(views), 1)
         view = views[0]
-        self.assertEqual(view['view'], pyramid)
-
+        self.assertEqual(view['view'], DummyHandler)
+    
+    def test_add_handler_explicit_action_lacking(self):
+        import pyramid
+        config = self._makeOne()
+        config.add_route('name', ':def')
+        views = []
+        def dummy_add_view(**kw): views.append(kw)
+        class DummyHandler(object):
+            def one(self): pass
+        config.add_view = dummy_add_view # shouldn't be called
+        config.add_route = None # shouldn't be called
+        config.add_handler('name', None, DummyHandler, action='two')
+        self.assertEqual(len(views), 0)
 
     def _assertRoute(self, config, name, path, num_predicates=0):
         from pyramid.interfaces import IRoutesMapper
