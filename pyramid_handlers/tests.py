@@ -297,6 +297,22 @@ class Test_add_handler(unittest.TestCase):
         config.add_handler('name', None, DummyHandler, action='two')
         self.assertEqual(len(views), 0)
 
+    def test_add_handler_explicit_action_and_extra_exposed(self):
+        import pyramid
+        config = self._makeOne()
+        config.add_route('name', ':def')
+        views = []
+        def dummy_add_view(**kw): views.append(kw)
+        class DummyHandler(object):
+            def two(self): pass
+            two.__exposed__ = [{'name':'one'}]
+        config.add_view = dummy_add_view # shouldn't be called
+        config.add_route = None # shouldn't be called
+        config.add_handler('name', None, DummyHandler, action='two')
+        self.assertEqual(len(views), 1)
+        view = views[0]
+        self.assertEqual(view['view'], DummyHandler)
+
     def _assertRoute(self, config, name, path, num_predicates=0):
         from pyramid.interfaces import IRoutesMapper
         mapper = config.registry.getUtility(IRoutesMapper)
