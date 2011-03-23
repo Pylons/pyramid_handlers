@@ -157,7 +157,6 @@ def locate_view_by_name(config, handler, route_name, action_decorator, name):
         if not view_regged:
             config.add_view(view=handler, attr=name, route_name=route_name,
                             decorator=action_decorator)
-            
 
 
 class ActionPredicate(object):
