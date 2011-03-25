@@ -9,9 +9,9 @@ def add_handler(self, route_name, pattern, handler, action=None, **kw):
     (usually a class).
 
     This function should never be called directly; instead the
-    ``pyramid_handlers.includeme`` function should be included into an
-    application and this function will be available as a method of the
-    resulting configurator.
+    ``pyramid_handlers.includeme`` function should be used to include this
+    function into an application; the function will thereafter be available
+    as a method of the resulting configurator.
 
     ``route_name`` is the name of the route (to be used later in
     URL generation).
