@@ -313,6 +313,51 @@ class Test_add_handler(unittest.TestCase):
         view = views[0]
         self.assertEqual(view['view'], DummyHandler)
 
+    def test_add_handler_with_view_permission_and_action_in_path(self):
+        from pyramid_handlers import action
+        config = self._makeOne()
+        views = []
+        def dummy_add_view(**kw):
+            views.append(kw) # pragma: no cover
+        config.add_view = dummy_add_view
+        class MyView(DummyHandler):
+            @action(permission='different_perm')
+            def action_with_non_default_permission(self): # pragma: no cover
+                return 'My permission is different!'
+        config.add_handler('name', '/{action}', MyView, view_permission='perm')
+        self._assertRoute(config, 'name', '/{action}', 0)
+        self.assertEqual(len(views), 3)
+        for view in views:
+            self.assert_('permission' in view)
+            if view['attr'] == 'action_with_non_default_permission':
+                self.assertEqual(view['permission'], 'different_perm')
+            else:
+                self.assertEqual(view['permission'], 'perm')
+
+    def test_add_handler_with_view_permission_and_action_as_kwarg(self):
+        from pyramid_handlers import action
+        config = self._makeOne()
+        views = []
+        def dummy_add_view(**kw):
+            views.append(kw) # pragma: no cover
+        config.add_view = dummy_add_view
+        class MyView(DummyHandler):
+            def index(self): # pragma: no cover
+                return 'Index'
+            @action(name='index', permission='different_perm')
+            def index2(self): # pragma: no cover
+                return 'Index with different permission.'
+        config.add_handler('name', '/', MyView, action='index',
+                           view_permission='perm')
+        self._assertRoute(config, 'name', '/', 0)
+        self.assertEqual(len(views), 2)
+        for view in views:
+            self.assert_('permission' in view)
+            if view['attr'] == 'index':
+                self.assertEqual(view['permission'], 'perm')
+            elif view['attr'] == 'index2':
+                self.assertEqual(view['permission'], 'different_perm')
+
     def _assertRoute(self, config, name, path, num_predicates=0):
         from pyramid.interfaces import IRoutesMapper
         mapper = config.registry.getUtility(IRoutesMapper)
