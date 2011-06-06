@@ -44,6 +44,10 @@ def add_handler(self, route_name, pattern, handler, action=None, **kw):
     This method returns the result of add_route."""
     handler = self.maybe_dotted(handler)
 
+    default_view_args = {
+        'permission': kw.pop('view_permission', kw.pop('permission', None))
+    }
+
     if pattern is not None:
         route = self.add_route(route_name, pattern, **kw)
     else:
@@ -79,19 +83,22 @@ def add_handler(self, route_name, pattern, handler, action=None, **kw):
             'path %r' % (action, pattern))
 
     if path_has_action:
-        scan_handler(self, handler, route_name, action_decorator)
+        scan_handler(self, handler, route_name, action_decorator,
+                     **default_view_args)
     else:
         locate_view_by_name(
             config=self,
             handler=handler,
             route_name=route_name,
             action_decorator=action_decorator,
-            name=action
+            name=action,
+            **default_view_args
         )
     return route
 
 
-def scan_handler(config, handler, route_name, action_decorator):
+def scan_handler(config, handler, route_name, action_decorator,
+                 **default_view_args):
     """Scan a handler for automatically exposed views to register"""
     autoexpose = getattr(handler, '__autoexpose__', r'[A-Za-z]+')
     if autoexpose:
@@ -107,7 +114,8 @@ def scan_handler(config, handler, route_name, action_decorator):
         for expose_config in configs:
             # we don't want to mutate any dict in __exposed__,
             # so we copy each
-            view_args = expose_config.copy()
+            view_args = default_view_args.copy()
+            view_args.update(expose_config.copy())
             action = view_args.pop('name', method_name)
             preds = list(view_args.pop('custom_predicates', []))
             preds.append(ActionPredicate(action))
@@ -117,7 +125,8 @@ def scan_handler(config, handler, route_name, action_decorator):
                             decorator=action_decorator, **view_args)
 
 
-def locate_view_by_name(config, handler, route_name, action_decorator, name):
+def locate_view_by_name(config, handler, route_name, action_decorator, name,
+                        **default_view_args):
     """Locate and add all the views in a handler with the matching name, or
     the method itself if it exists."""
     method_name = name
@@ -137,7 +146,8 @@ def locate_view_by_name(config, handler, route_name, action_decorator, name):
                 continue
             # we don't want to mutate any dict in __exposed__,
             # so we copy each
-            view_args = expose_config.copy()
+            view_args = default_view_args.copy()
+            view_args.update(expose_config.copy())
             del view_args['name']
             config.add_view(view=handler, attr=attr,
                             route_name=route_name,
@@ -152,11 +162,13 @@ def locate_view_by_name(config, handler, route_name, action_decorator, name):
             if 'name' in expose_config and expose_config['name'] != name:
                 continue
             view_regged = True
+            view_args = default_view_args.copy()
+            view_args.update(expose_config.copy())
             config.add_view(view=handler, attr=name, route_name=route_name,
-                            decorator=action_decorator, **expose_config)
+                            decorator=action_decorator, **view_args)
         if not view_regged:
             config.add_view(view=handler, attr=name, route_name=route_name,
-                            decorator=action_decorator)
+                            decorator=action_decorator, **default_view_args)
 
 
 class ActionPredicate(object):
