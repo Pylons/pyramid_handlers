@@ -25,13 +25,13 @@ except IOError:
     README = CHANGES = ''
 
 install_requires=[
-    'pyramid>=1.0a10', 'pyramid_zcml',
+    'pyramid>=1.0a10',
     ]
 
 if platform.system() == 'Java':
-    tests_require = install_requires
+    tests_require = install_requires + ['pyramid_zcml']
 else:
-    tests_require= install_requires + ['Sphinx', 'docutils', 
+    tests_require= install_requires + ['pyramid_zcml', 'Sphinx', 'docutils', 
                                        'repoze.sphinx.autointerface']
 
 setup(name='pyramid_handlers',

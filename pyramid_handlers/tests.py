@@ -472,8 +472,7 @@ class TestHandlerDirective(unittest.TestCase):
 
         route_action = actions[0]
         route_discriminator = route_action['discriminator']
-        self.assertEqual(route_discriminator,
-                         ('route', 'name', False, None, None, None, None,None))
+        self.assertEqual(route_discriminator[:2], ('route', 'name'))
         self._assertRoute('name', '/:action')
 
         view_action = actions[1]

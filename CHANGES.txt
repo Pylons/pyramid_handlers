@@ -5,6 +5,12 @@ Next release
 
 - Add example of ``__action_decorator__`` in documentation.
 
+- Drop install dependency on pyramid_zcml.
+
+- Add a tox.ini for Jenkins testing.
+
+- Fix tests for Pyramid 1.1.
+
 0.1 (2011-01-18)
 ----------------
 
