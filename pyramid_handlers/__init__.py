@@ -3,6 +3,8 @@ import re
 
 from pyramid.exceptions import ConfigurationError
 
+action_re = re.compile(r'''({action}|:action)''')
+
 def add_handler(self, route_name, pattern, handler, action=None, **kw):
     """ Add a Pylons-style view handler.  This function adds a
     route and some number of views based on a handler object
@@ -19,9 +21,7 @@ def add_handler(self, route_name, pattern, handler, action=None, **kw):
     ``pattern`` is the matching pattern,
     e.g. ``'/blog/{action}'``.  ``pattern`` may be ``None``, in
     which case the pattern of an existing route named the same as
-    ``route_name`` is used.  If ``pattern`` is ``None`` and no
-    route named ``route_name`` exists, a ``ConfigurationError`` is
-    raised.
+    ``route_name`` is used.
 
     ``handler`` is a dotted name of (or direct reference to) a
     Python handler class,
@@ -39,28 +39,17 @@ def add_handler(self, route_name, pattern, handler, action=None, **kw):
 
     Any extra keyword arguments are passed along to ``add_route``.
 
-    See :ref:`views_chapter` for more explanatory documentation.
-
-    This method returns the result of add_route."""
-    handler = self.maybe_dotted(handler)
+    See :ref:`views_chapter` for more explanatory documentation."""
+    if pattern is None:
+        raise ConfigurationError('As of version 0.3 pattern cannot be None')
 
     default_view_args = {
         'permission': kw.pop('view_permission', kw.pop('permission', None))
     }
 
-    if pattern is not None:
-        route = self.add_route(route_name, pattern, **kw)
-    else:
-        mapper = self.get_routes_mapper()
-        route = mapper.get_route(route_name)
-        if route is None:
-            raise ConfigurationError(
-                'The "pattern" parameter may only be "None" when a route '
-                'with the route_name argument was previously registered. '
-                'No such route named %r exists' % route_name)
+    self.add_route(route_name, pattern, **kw)
 
-        pattern = route.pattern
-
+    handler = self.maybe_dotted(handler)
     action_decorator = getattr(handler, '__action_decorator__', None)
     if action_decorator is not None:
         if hasattr(action_decorator, 'im_self'):
@@ -75,14 +64,13 @@ def add_handler(self, route_name, pattern, handler, action=None, **kw):
                     'staticmethod, classmethod, function, or an instance '
                     'which is a callable')
 
-    path_has_action = ':action' in pattern or '{action}' in pattern
-
-    if action and path_has_action:
+    action_pattern = action_re.search(pattern)
+    if action and action_pattern:
         raise ConfigurationError(
             'action= (%r) disallowed when an action is in the route '
             'path %r' % (action, pattern))
 
-    if path_has_action:
+    if action_pattern:
         scan_handler(self, handler, route_name, action_decorator,
                      **default_view_args)
     else:
@@ -94,7 +82,6 @@ def add_handler(self, route_name, pattern, handler, action=None, **kw):
             name=action,
             **default_view_args
         )
-    return route
 
 
 def scan_handler(config, handler, route_name, action_decorator,
