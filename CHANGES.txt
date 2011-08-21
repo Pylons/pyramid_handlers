@@ -1,3 +1,10 @@
+Next release
+------------
+
+- Using ``None`` as a pattern is no longer permitted in a call to
+  ``add_handler``.  This is for compatibility with an upcoming Pyramid "route
+  groups" feature.
+
 0.2 (2011-07-22)
 ----------------
 
