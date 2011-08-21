@@ -18,10 +18,7 @@ def add_handler(self, route_name, pattern, handler, action=None, **kw):
     ``route_name`` is the name of the route (to be used later in
     URL generation).
 
-    ``pattern`` is the matching pattern,
-    e.g. ``'/blog/{action}'``.  ``pattern`` may be ``None``, in
-    which case the pattern of an existing route named the same as
-    ``route_name`` is used.
+    ``pattern`` is the matching pattern, e.g. ``'/blog/{action}'``.
 
     ``handler`` is a dotted name of (or direct reference to) a
     Python handler class,
