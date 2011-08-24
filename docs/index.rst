@@ -98,7 +98,7 @@ parameters for each potential view callable which is a method of the handler.
 
 Handlers are added to application configuration via the
 :func:`pyramid_handlers.add_handler` API, which is accessible after
-configuratoin as the method ``pyramid.config.Configurator.add_handler``.
+configuration as the method ``pyramid.config.Configurator.add_handler``.
 This function will scan a :term:`view handler` class and automatically set up
 view configurations for its methods that represent "auto-exposed" view
 callable, or those that were decorated explicitly with the
