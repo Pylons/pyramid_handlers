@@ -498,29 +498,8 @@ class TestHandlerDirective(unittest.TestCase):
                 return 'OK'
         self._callFUT(context, 'name', '/:action', Handler)
         actions = extract_actions(context.actions)
-        self.assertEqual(len(actions), 3)
-
-        route_action = actions[0]
-        route_discriminator = route_action['discriminator']
-        self.assertEqual(route_discriminator[:2], ('route', 'name'))
-        self._assertRoute('name', '/:action')
-
-        view_action = actions[1]
+        _execute_actions(actions)
         request_type = reg.getUtility(IRouteRequest, 'name')
-        view_discriminator = view_action['discriminator']
-        discrim = ('view', None, '', None, IView, None, None, None, 'name',
-                   'one', False, None, None, None)
-        self.assertEqual(view_discriminator[:14], discrim)
-        view_action['callable'](*view_action['args'], **view_action['kw'])
-
-        view_action = actions[2]
-        request_type = reg.getUtility(IRouteRequest, 'name')
-        view_discriminator = view_action['discriminator']
-        discrim = ('view', None, '', None, IView, None, None, None, 'name',
-                   'two', False, None, None, None)
-        self.assertEqual(view_discriminator[:14], discrim)
-        view_action['callable'](*view_action['args'], **view_action['kw'])
-
         wrapped = reg.adapters.lookup(
             (IViewClassifier, request_type, Interface), IView, name='')
         self.failUnless(wrapped)
@@ -568,3 +547,9 @@ def extract_actions(native):
         d['order'] = order
         L.append(d)
     return L
+
+def _execute_actions(actions):
+    for action in sorted(actions, key=lambda x: x['order']):
+        if 'callable' in action:
+            if action['callable']:
+                action['callable']()
