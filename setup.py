@@ -35,7 +35,7 @@ else:
                                        'repoze.sphinx.autointerface']
 
 setup(name='pyramid_handlers',
-      version='0.2',
+      version='0.3',
       description='Pyramid handlers emulate Pylons 1 controllers',
       long_description=README + '\n\n' +  CHANGES,
       classifiers=[
