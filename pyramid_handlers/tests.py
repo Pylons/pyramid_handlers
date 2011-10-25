@@ -43,6 +43,43 @@ class Test_add_handler(unittest.TestCase):
         self.assertEqual(view['attr'], 'action2')
         self.assertEqual(view['view'], DummyHandler)
 
+    def test_add_handler_action_in_route_pattern_with_xformer(self):
+        config = self._makeOne()
+        def x(name):
+            return name.upper()
+        config.registry.settings['pyramid_handlers.method_name_xformer'] = x
+        views = []
+        def dummy_add_view(**kw):
+            views.append(kw)
+        config.add_view = dummy_add_view
+        config.add_handler('name', '/:action', DummyHandler)
+        self._assertRoute(config, 'name', '/:action', 0)
+        self.assertEqual(len(views), 2)
+
+        view = views[0]
+        preds = view['custom_predicates']
+        self.assertEqual(len(preds), 1)
+        pred = preds[0]
+        request = testing.DummyRequest()
+        self.assertEqual(pred(None, request), False)
+        request.matchdict = {'action':'ACTION1'}
+        self.assertEqual(pred(None, request), True)
+        self.assertEqual(view['route_name'], 'name')
+        self.assertEqual(view['attr'], 'action1')
+        self.assertEqual(view['view'], DummyHandler)
+
+        view = views[1]
+        preds = view['custom_predicates']
+        self.assertEqual(len(preds), 1)
+        pred = preds[0]
+        request = testing.DummyRequest()
+        self.assertEqual(pred(None, request), False)
+        request.matchdict = {'action':'ACTION2'}
+        self.assertEqual(pred(None, request), True)
+        self.assertEqual(view['route_name'], 'name')
+        self.assertEqual(view['attr'], 'action2')
+        self.assertEqual(view['view'], DummyHandler)
+
     def test_add_handler_with_view_overridden_autoexpose_None(self):
         config = self._makeOne()
         views = []
@@ -357,13 +394,12 @@ class Test_add_handler(unittest.TestCase):
     def test_conflict_add_handler(self):
         class AHandler(object):
             def aview(self): pass
-        from zope.configuration.config import ConfigurationConflictError
         config = self._makeOne(autocommit=False)
         config.add_handler('h1', '/h1', handler=AHandler)
         config.add_handler('h1', '/h1', handler=AHandler)
         try:
             config.commit()
-        except ConfigurationConflictError, why:
+        except Exception, why:
             c = list(self._conflictFunctions(why))
             self.assertEqual(c[0], 'test_conflict_add_handler')
             self.assertEqual(c[1], 'test_conflict_add_handler')
@@ -443,7 +479,7 @@ class Test_action(unittest.TestCase):
         def wrapped():
             """ """
         result = inst(wrapped)
-        self.failUnless(result is wrapped)
+        self.assertTrue(result is wrapped)
         self.assertEqual(result.__exposed__, [{'a':1, 'b':2}])
 
     def test_call_with_previous__exposed__(self):
@@ -452,13 +488,15 @@ class Test_action(unittest.TestCase):
             """ """
         wrapped.__exposed__ = [None]
         result = inst(wrapped)
-        self.failUnless(result is wrapped)
+        self.assertTrue(result is wrapped)
         self.assertEqual(result.__exposed__, [None, {'a':1, 'b':2}])
 
 class TestHandlerDirective(unittest.TestCase):
     def setUp(self):
         self.config = testing.setUp(autocommit=False)
-        self.config._ctx = self.config._make_context()
+        _ctx = self.config._ctx
+        if _ctx is None: # pragma: no cover ; will never be true under 1.2a5+
+            self.config._ctx = self.config._make_context()
 
     def tearDown(self):
         testing.tearDown()
@@ -467,18 +505,6 @@ class TestHandlerDirective(unittest.TestCase):
         from pyramid_handlers.zcml import handler
         return handler(*arg, **kw)
 
-    def _assertRoute(self, name, pattern, num_predicates=0):
-        from pyramid.interfaces import IRoutesMapper
-        reg = self.config.registry
-        mapper = reg.getUtility(IRoutesMapper)
-        routes = mapper.get_routes()
-        route = routes[0]
-        self.assertEqual(len(routes), 1)
-        self.assertEqual(route.name, name)
-        self.assertEqual(route.pattern, pattern)
-        self.assertEqual(len(routes[0].predicates), num_predicates)
-        return route
-
     def test_it(self):
         from pyramid_handlers import action
         from zope.interface import Interface
@@ -486,7 +512,7 @@ class TestHandlerDirective(unittest.TestCase):
         from pyramid.interfaces import IViewClassifier
         from pyramid.interfaces import IRouteRequest
         reg = self.config.registry
-        context = self.config._ctx
+        context = DummyZCMLContext(self.config)
         class Handler(object): # pragma: no cover
             def __init__(self, request):
                 self.request = request
@@ -502,7 +528,7 @@ class TestHandlerDirective(unittest.TestCase):
         request_type = reg.getUtility(IRouteRequest, 'name')
         wrapped = reg.adapters.lookup(
             (IViewClassifier, request_type, Interface), IView, name='')
-        self.failUnless(wrapped)
+        self.assertTrue(wrapped)
 
     def test_pattern_is_None(self):
         from pyramid.exceptions import ConfigurationError
@@ -521,7 +547,7 @@ class Test_includeme(unittest.TestCase):
         from pyramid_handlers import includeme
         c = Configurator(autocommit=True)
         c.include(includeme)
-        self.failUnless(c.add_handler.im_func.__docobj__ is add_handler)
+        self.assertTrue(c.add_handler.im_func.__docobj__ is add_handler)
 
 class DummyHandler(object): # pragma: no cover
     def __init__(self, request):
@@ -553,3 +579,21 @@ def _execute_actions(actions):
         if 'callable' in action:
             if action['callable']:
                 action['callable']()
+
+class DummyZCMLContext(object):
+    def __init__(self, config):
+        if hasattr(config, '_make_context'): # pragma: no cover
+            # 1.0, 1.1 b/c
+            config._ctx = config._make_context()
+        self.registry = config.registry
+        self.package = config.package
+        self.autocommit = config.autocommit
+        self.route_prefix = getattr(config, 'route_prefix', None)
+        self.basepath = getattr(config, 'basepath', None)
+        self.includepath = getattr(config, 'includepath', ())
+        self.info = getattr(config, 'info', '')
+        self.actions = config._ctx.actions
+        self._ctx = config._ctx
+
+    def action(self, *arg, **kw): # pragma: no cover
+        self._ctx.action(*arg, **kw)

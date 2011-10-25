@@ -347,6 +347,88 @@ When the ``index`` method of the above example handler is invoked, it will
 raise ``MySpecialException``.  As a result, the action decorator will cath
 this exception and turn it into a response.
 
+Configuration Knobs
+-------------------
+
+If your handler action methods that have characters in them (such as
+underscores) that you don't find appropriate in a URL, such as
+``a_method_with_underscores``:
+
+.. code-block:: python
+   :linenos:
+
+   # in a module named mypackage.handlers
+
+   from pyramid_handlers import action
+
+   class AHandler(object):
+       def __init__(self, request):
+           self.request = request
+
+       @action(renderer='some/renderer.pt')
+       def a_method_with_underscores(self):
+           return {}
+
+And there is some regular transform you can perform against all action method
+registrations (such as converting the underscores to dashes), you can define
+a "method name transformer":
+
+.. code-block:: python
+   :linenos:
+
+   # in the same module named mypackage.handlers
+
+   def transformer(method_name):
+       return method_name.replace('_', '-')
+
+You can then use the method name transformer in your Pyramid ``settings`` via
+the `.ini`` file:
+
+.. code-block:: ini
+   :linenos:
+
+   [app:myapp]
+   ...
+   pyramid_handlers.method_name_xformer = mypackage.handlers.transformer
+
+Or directly in your ``main()`` function:
+
+.. code-block:: python
+   :linenos:
+
+   # in a module named mypackage.handlers
+
+   from mypackage.handlers import transformer
+
+   def main(global_conf, *settings):
+       settings['pyramid_handlers.method_name_xformer'] = transformer
+       config = Configurator(settings=settings)
+       # .. rest of configuration ...
+
+Once you've set up a method name transformer, any ``{action}`` substitution
+in the pattern associated with a handler will be matched against the
+transformed method name value instead of the untransformed method name value:
+
+.. code-block:: python
+   :linenos:
+
+   # in a module named mypackage.handlers
+
+   from mypackage.handlers import transformer
+   from mypackage.handlers import AHandler
+
+   def main(global_conf, *settings):
+       settings['pyramid_handlers.method_name_xformer'] = transformer
+       config = Configurator(settings=settings)
+       config.add_handler('ahandler', '/ahandler/{action}', handler=AHandler)
+       # .. rest of configuration ...
+
+Now, when ``/ahandler/a-method-with-underscores`` is visited, it will invoke
+the ``AHandler.a_method_with_underscores`` method.  Note that
+``/ahandler/a_method_with_underscores`` will however no longer work to invoke
+the method.
+
+
 More Information
 ----------------
 

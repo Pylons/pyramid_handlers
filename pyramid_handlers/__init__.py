@@ -84,6 +84,9 @@ def add_handler(self, route_name, pattern, handler, action=None, **kw):
 def scan_handler(config, handler, route_name, action_decorator,
                  **default_view_args):
     """Scan a handler for automatically exposed views to register"""
+    xformer = config.registry.settings.get(
+        'pyramid_handlers.method_name_xformer')
+    xformer = config.maybe_dotted(xformer)
     autoexpose = getattr(handler, '__autoexpose__', r'[A-Za-z]+')
     if autoexpose:
         try:
@@ -100,7 +103,11 @@ def scan_handler(config, handler, route_name, action_decorator,
             # so we copy each
             view_args = default_view_args.copy()
             view_args.update(expose_config.copy())
-            action = view_args.pop('name', method_name)
+            action = view_args.pop('name', None)
+            if action is None:
+                action = method_name
+                if xformer is not None:
+                    action = xformer(action)
             preds = list(view_args.pop('custom_predicates', []))
             preds.append(ActionPredicate(action))
             view_args['custom_predicates'] = preds
@@ -201,7 +208,6 @@ class action(object):
         else:
             wrapped.__exposed__ = [self.kw]
         return wrapped
-
 
 def includeme(config):
     config.add_directive('add_handler', add_handler)
