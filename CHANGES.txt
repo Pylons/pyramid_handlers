@@ -1,5 +1,5 @@
-Next release
-------------
+0.4 (2011-11-25)
+----------------
 
 - Add ``pyramid.handlers.method_name_xformer`` setting, which allows the view
   associated with a handler action to match when a converted action name is
