@@ -1,2 +1,1 @@
-nose
 repoze.sphinx.autointerface
