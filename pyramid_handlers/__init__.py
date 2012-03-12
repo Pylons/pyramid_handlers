@@ -96,11 +96,7 @@ def scan_handler(config, handler, route_name, action_decorator,
             autoexpose = re.compile(autoexpose).match
         except (re.error, TypeError) as why:
             raise ConfigurationError(why.args[0])
-    if PY3:
-        # no unbound methods in Py3
-        method_info = inspect.getmembers(handler, inspect.isfunction)
-    else:
-        method_info = inspect.getmembers(handler, inspect.ismethod)
+    method_info = get_method_info(handler)
     for method_name, method in method_info:
         configs = getattr(method, '__exposed__', [])
         if autoexpose and not configs:
@@ -133,7 +129,8 @@ def locate_view_by_name(config, handler, route_name, action_decorator, name,
         method_name = '__call__'
 
     # Scan the controller for any other methods with this action name
-    for attr, method in inspect.getmembers(handler, inspect.ismethod):
+    method_info = get_method_info(handler)
+    for attr, method in method_info:
         configs = getattr(method, '__exposed__', [{}])
         for expose_config in configs:
             # Don't re-register the same view if this method name is
@@ -216,6 +213,14 @@ class action(object):
         else:
             wrapped.__exposed__ = [self.kw]
         return wrapped
+
+def get_method_info(cls):
+    if PY3:
+        # no unbound methods in Py3
+        method_info = inspect.getmembers(cls, inspect.isfunction)
+    else:
+        method_info = inspect.getmembers(cls, inspect.ismethod)
+    return method_info
 
 def includeme(config):
     config.add_directive('add_handler', add_handler)
