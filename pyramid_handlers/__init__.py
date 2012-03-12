@@ -93,7 +93,7 @@ def scan_handler(config, handler, route_name, action_decorator,
             autoexpose = re.compile(autoexpose).match
         except (re.error, TypeError) as why:
             raise ConfigurationError(why.args[0])
-    for method_name, method in inspect.getmembers(handler, inspect.ismethod):
+    for method_name, method in inspect.getmembers(handler, inspect.isfunction):
         configs = getattr(method, '__exposed__', [])
         if autoexpose and not configs:
             if autoexpose(method_name):
