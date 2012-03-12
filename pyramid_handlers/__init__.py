@@ -49,12 +49,12 @@ def add_handler(self, route_name, pattern, handler, action=None, **kw):
     handler = self.maybe_dotted(handler)
     action_decorator = getattr(handler, '__action_decorator__', None)
     if action_decorator is not None:
-        if hasattr(action_decorator, 'im_self'):
-            # instance methods have an im_self == None
-            # classmethods have an im_self == cls
-            # staticmethods have no im_self
-            # instances have no im_self
-            if action_decorator.im_self is not handler:
+        if hasattr(action_decorator, '__self__'):
+            # instance methods have an __self__ == None
+            # classmethods have an __self__ == cls
+            # staticmethods have no __self__
+            # instances have no __self__
+            if action_decorator.__self__ is not handler:
                 raise ConfigurationError(
                     'The "__action_decorator__" attribute of a handler '
                     'must not be an instance method (must be a '
