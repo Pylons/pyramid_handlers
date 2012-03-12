@@ -91,8 +91,8 @@ def scan_handler(config, handler, route_name, action_decorator,
     if autoexpose:
         try:
             autoexpose = re.compile(autoexpose).match
-        except (re.error, TypeError), why:
-            raise ConfigurationError(why[0])
+        except (re.error, TypeError) as why:
+            raise ConfigurationError(why.args[0])
     for method_name, method in inspect.getmembers(handler, inspect.ismethod):
         configs = getattr(method, '__exposed__', [])
         if autoexpose and not configs:
@@ -168,8 +168,8 @@ class ActionPredicate(object):
         self.action = action
         try:
             self.action_re = re.compile(action + '$')
-        except (re.error, TypeError), why:
-            raise ConfigurationError(why[0])
+        except (re.error, TypeError) as why:
+            raise ConfigurationError(why.args[0])
 
     def __call__(self, context, request):
         matchdict = request.matchdict

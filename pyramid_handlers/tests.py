@@ -1,5 +1,8 @@
+import sys
 import unittest
 from pyramid import testing
+
+PY3 = sys.version_info[0] == 3
 
 class Test_add_handler(unittest.TestCase):
     def _makeOne(self, autocommit=True):
@@ -399,7 +402,7 @@ class Test_add_handler(unittest.TestCase):
         config.add_handler('h1', '/h1', handler=AHandler)
         try:
             config.commit()
-        except Exception, why:
+        except Exception as why:
             c = list(self._conflictFunctions(why))
             self.assertEqual(c[0], 'test_conflict_add_handler')
             self.assertEqual(c[1], 'test_conflict_add_handler')
@@ -491,53 +494,54 @@ class Test_action(unittest.TestCase):
         self.assertTrue(result is wrapped)
         self.assertEqual(result.__exposed__, [None, {'a':1, 'b':2}])
 
-class TestHandlerDirective(unittest.TestCase):
-    def setUp(self):
-        self.config = testing.setUp(autocommit=False)
-        _ctx = self.config._ctx
-        if _ctx is None: # pragma: no cover ; will never be true under 1.2a5+
-            self.config._ctx = self.config._make_context()
+if not PY3:
+    class TestHandlerDirective(unittest.TestCase):
+        def setUp(self):
+            self.config = testing.setUp(autocommit=False)
+            _ctx = self.config._ctx
+            if _ctx is None: # pragma: no cover ; will never be true under 1.2a5+
+                self.config._ctx = self.config._make_context()
 
-    def tearDown(self):
-        testing.tearDown()
+        def tearDown(self):
+            testing.tearDown()
 
-    def _callFUT(self, *arg, **kw):
-        from pyramid_handlers.zcml import handler
-        return handler(*arg, **kw)
+        def _callFUT(self, *arg, **kw):
+            from pyramid_handlers.zcml import handler
+            return handler(*arg, **kw)
 
-    def test_it(self):
-        from pyramid_handlers import action
-        from zope.interface import Interface
-        from pyramid.interfaces import IView
-        from pyramid.interfaces import IViewClassifier
-        from pyramid.interfaces import IRouteRequest
-        reg = self.config.registry
-        context = DummyZCMLContext(self.config)
-        class Handler(object): # pragma: no cover
-            def __init__(self, request):
-                self.request = request
-            action(renderer='json')
-            def one(self):
-                return 'OK'
-            action(renderer='json')
-            def two(self):
-                return 'OK'
-        self._callFUT(context, 'name', '/:action', Handler)
-        actions = extract_actions(context.actions)
-        _execute_actions(actions)
-        request_type = reg.getUtility(IRouteRequest, 'name')
-        wrapped = reg.adapters.lookup(
-            (IViewClassifier, request_type, Interface), IView, name='')
-        self.assertTrue(wrapped)
+        def test_it(self):
+            from pyramid_handlers import action
+            from zope.interface import Interface
+            from pyramid.interfaces import IView
+            from pyramid.interfaces import IViewClassifier
+            from pyramid.interfaces import IRouteRequest
+            reg = self.config.registry
+            context = DummyZCMLContext(self.config)
+            class Handler(object): # pragma: no cover
+                def __init__(self, request):
+                    self.request = request
+                action(renderer='json')
+                def one(self):
+                    return 'OK'
+                action(renderer='json')
+                def two(self):
+                    return 'OK'
+            self._callFUT(context, 'name', '/:action', Handler)
+            actions = extract_actions(context.actions)
+            _execute_actions(actions)
+            request_type = reg.getUtility(IRouteRequest, 'name')
+            wrapped = reg.adapters.lookup(
+                (IViewClassifier, request_type, Interface), IView, name='')
+            self.assertTrue(wrapped)
 
-    def test_pattern_is_None(self):
-        from pyramid.exceptions import ConfigurationError
+        def test_pattern_is_None(self):
+            from pyramid.exceptions import ConfigurationError
 
-        context = self.config._ctx
-        class Handler(object):
-            pass
-        self.assertRaises(ConfigurationError, self._callFUT,
-                          context, 'name', None, Handler)
+            context = self.config._ctx
+            class Handler(object):
+                pass
+            self.assertRaises(ConfigurationError, self._callFUT,
+                              context, 'name', None, Handler)
 
 
 class Test_includeme(unittest.TestCase):
