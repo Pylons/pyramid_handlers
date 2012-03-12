@@ -556,7 +556,7 @@ class Test_includeme(unittest.TestCase):
         from pyramid_handlers import includeme
         c = Configurator(autocommit=True)
         c.include(includeme)
-        self.assertTrue(c.add_handler.im_func.__docobj__ is add_handler)
+        self.assertTrue(c.add_handler.__func__.__docobj__ is add_handler)
 
 class DummyHandler(object): # pragma: no cover
     def __init__(self, request):
