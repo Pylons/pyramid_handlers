@@ -1,11 +1,10 @@
 from pyramid_zcml import IRouteLikeDirective
+from pyramid_zcml import with_context
 
 from zope.schema import TextLine
 from zope.configuration.fields import GlobalObject
 
 from pyramid.exceptions import ConfigurationError
-
-from pyramid.config import Configurator
 
 from pyramid_handlers import add_handler
 
@@ -54,7 +53,7 @@ def handler(_context,
     if pattern is None:
         raise ConfigurationError('handler directive must include a "pattern"')
 
-    config = Configurator.with_context(_context)
+    config = with_context(_context)
     if not hasattr(config, 'add_handler'):
         config.add_directive('add_handler', add_handler)
     

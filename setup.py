@@ -30,11 +30,14 @@ install_requires=[
     ]
 
 PY3 = sys.version_info[0] == 3
+
+# pyramid_zcml 0.9.2 required for with_context function
+
 if platform.system() == 'Java':
-    tests_require = install_requires + ['pyramid_zcml']
+    tests_require = install_requires + ['pyramid_zcml>=0.9.2']
 else:
     if not PY3:
-        tests_require= install_requires + ['pyramid_zcml', 'Sphinx', 'docutils',]
+        tests_require= install_requires + ['pyramid_zcml>=0.9.2', 'Sphinx', 'docutils',]
     else:
         tests_require= install_requires + ['Sphinx', 'docutils',]
 

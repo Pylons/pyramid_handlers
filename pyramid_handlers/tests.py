@@ -1,6 +1,7 @@
 import sys
 import unittest
 from pyramid import testing
+from pyramid.config import Configurator
 
 PY3 = sys.version_info[0] == 3
 
@@ -415,7 +416,11 @@ class Test_add_handler(unittest.TestCase):
         conflicts = e._conflicts.values()
         for conflict in conflicts:
             for confinst in conflict:
-                yield confinst[2]
+                try:
+                    # pyramid 1.2 
+                    yield confinst[2]
+                except TypeError:
+                    yield confinst.function
 
 class TestActionPredicate(unittest.TestCase):
     def _getTargetClass(self):
@@ -563,21 +568,36 @@ class DummyHandler(object): # pragma: no cover
     def action2(self):
         return 'response 2'
 
-def extract_actions(native):
+try:
+    from pyramid.config import expand_action
+    dict_actions = True
+except ImportError:
     from zope.configuration.config import expand_action
-    L = []
-    for action in native:
-        (discriminator, callable, args, kw, includepath, info, order
-         ) = expand_action(*action)
-        d = {}
-        d['discriminator'] = discriminator
-        d['callable'] = callable
-        d['args'] = args
-        d['kw'] = kw
-        d['order'] = order
-        L.append(d)
-    return L
+    dict_actions = False
 
+if dict_actions:
+    # pyramid 1.Xsomeversion uses dictionary-based actions; the imprecision
+    # of which is because i'm at a sprint and figuring out exactly which
+    # version is less important than keeping things moving, sorry.
+    def extract_actions(native):
+        return native
+
+else:
+    # some other version of pyramid uses tuple-based actions
+    def extract_actions(native): # pragma: no cover
+        L = []
+        for action in native:
+            (discriminator, callable, args, kw, includepath, info, order
+             ) = expand_action(*action)
+            d = {}
+            d['discriminator'] = discriminator
+            d['callable'] = callable
+            d['args'] = args
+            d['kw'] = kw
+            d['order'] = order
+            L.append(d)
+        return L
+    
 def _execute_actions(actions):
     for action in sorted(actions, key=lambda x: x['order']):
         if 'callable' in action:
@@ -585,6 +605,8 @@ def _execute_actions(actions):
                 action['callable']()
 
 class DummyZCMLContext(object):
+    config_class = Configurator
+    introspection = False
     def __init__(self, config):
         if hasattr(config, '_make_context'): # pragma: no cover
             # 1.0, 1.1 b/c
