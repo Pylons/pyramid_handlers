@@ -1,7 +1,10 @@
 import inspect
 import re
+import sys
 
 from pyramid.exceptions import ConfigurationError
+
+PY3 = sys.version_info[0] == 3
 
 action_re = re.compile(r'''({action}|:action)''')
 
@@ -48,18 +51,6 @@ def add_handler(self, route_name, pattern, handler, action=None, **kw):
 
     handler = self.maybe_dotted(handler)
     action_decorator = getattr(handler, '__action_decorator__', None)
-    if action_decorator is not None:
-        if hasattr(action_decorator, 'im_self'):
-            # instance methods have an im_self == None
-            # classmethods have an im_self == cls
-            # staticmethods have no im_self
-            # instances have no im_self
-            if action_decorator.im_self is not handler:
-                raise ConfigurationError(
-                    'The "__action_decorator__" attribute of a handler '
-                    'must not be an instance method (must be a '
-                    'staticmethod, classmethod, function, or an instance '
-                    'which is a callable')
 
     action_pattern = action_re.search(pattern)
     if action and action_pattern:
@@ -91,9 +82,10 @@ def scan_handler(config, handler, route_name, action_decorator,
     if autoexpose:
         try:
             autoexpose = re.compile(autoexpose).match
-        except (re.error, TypeError), why:
-            raise ConfigurationError(why[0])
-    for method_name, method in inspect.getmembers(handler, inspect.ismethod):
+        except (re.error, TypeError) as why:
+            raise ConfigurationError(why.args[0])
+    method_info = get_method_info(handler)
+    for method_name, method in method_info:
         configs = getattr(method, '__exposed__', [])
         if autoexpose and not configs:
             if autoexpose(method_name):
@@ -125,7 +117,8 @@ def locate_view_by_name(config, handler, route_name, action_decorator, name,
         method_name = '__call__'
 
     # Scan the controller for any other methods with this action name
-    for attr, method in inspect.getmembers(handler, inspect.ismethod):
+    method_info = get_method_info(handler)
+    for attr, method in method_info:
         configs = getattr(method, '__exposed__', [{}])
         for expose_config in configs:
             # Don't re-register the same view if this method name is
@@ -168,8 +161,8 @@ class ActionPredicate(object):
         self.action = action
         try:
             self.action_re = re.compile(action + '$')
-        except (re.error, TypeError), why:
-            raise ConfigurationError(why[0])
+        except (re.error, TypeError) as why:
+            raise ConfigurationError(why.args[0])
 
     def __call__(self, context, request):
         matchdict = request.matchdict
@@ -208,6 +201,14 @@ class action(object):
         else:
             wrapped.__exposed__ = [self.kw]
         return wrapped
+
+def get_method_info(cls):
+    if PY3: # pragma: no cover
+        # no unbound methods in Py3
+        method_info = inspect.getmembers(cls, inspect.isfunction)
+    else:
+        method_info = inspect.getmembers(cls, inspect.ismethod)
+    return method_info
 
 def includeme(config):
     config.add_directive('add_handler', add_handler)
