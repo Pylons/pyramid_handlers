@@ -51,18 +51,6 @@ def add_handler(self, route_name, pattern, handler, action=None, **kw):
 
     handler = self.maybe_dotted(handler)
     action_decorator = getattr(handler, '__action_decorator__', None)
-    if action_decorator is not None:
-        if hasattr(action_decorator, '__self__'):
-            # instance methods have an __self__ == None
-            # classmethods have an __self__ == cls
-            # staticmethods have no __self__
-            # instances have no __self__
-            if action_decorator.__self__ is not handler:
-                raise ConfigurationError(
-                    'The "__action_decorator__" attribute of a handler '
-                    'must not be an instance method (must be a '
-                    'staticmethod, classmethod, function, or an instance '
-                    'which is a callable')
 
     action_pattern = action_re.search(pattern)
     if action and action_pattern:
@@ -215,7 +203,7 @@ class action(object):
         return wrapped
 
 def get_method_info(cls):
-    if PY3:
+    if PY3: # pragma: no cover
         # no unbound methods in Py3
         method_info = inspect.getmembers(cls, inspect.isfunction)
     else:

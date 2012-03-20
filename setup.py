@@ -14,8 +14,6 @@
 
 import os
 import sys
-import platform
-
 from setuptools import setup, find_packages
 
 here = os.path.abspath(os.path.dirname(__file__))
@@ -33,13 +31,10 @@ PY3 = sys.version_info[0] == 3
 
 # pyramid_zcml 0.9.2 required for with_context function
 
-if platform.system() == 'Java':
-    tests_require = install_requires + ['pyramid_zcml>=0.9.2']
+if PY3:
+    tests_require = []
 else:
-    if not PY3:
-        tests_require= install_requires + ['pyramid_zcml>=0.9.2', 'Sphinx', 'docutils',]
-    else:
-        tests_require= install_requires + ['Sphinx', 'docutils',]
+    tests_require = ['pyramid_zcml>=0.9.2']
 
 setup(name='pyramid_handlers',
       version='0.4',
