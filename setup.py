@@ -37,7 +37,7 @@ else:
     tests_require = ['pyramid_zcml>=0.9.2']
 
 setup(name='pyramid_handlers',
-      version='0.4',
+      version='0.5',
       description='Pyramid handlers emulate Pylons 1 controllers',
       long_description=README + '\n\n' +  CHANGES,
       classifiers=[
