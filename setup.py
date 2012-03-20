@@ -13,8 +13,7 @@
 ##############################################################################
 
 import os
-import platform
-
+import sys
 from setuptools import setup, find_packages
 
 here = os.path.abspath(os.path.dirname(__file__))
@@ -28,11 +27,14 @@ install_requires=[
     'pyramid>=1.0a10',
     ]
 
-if platform.system() == 'Java':
-    tests_require = install_requires + ['pyramid_zcml']
+PY3 = sys.version_info[0] == 3
+
+# pyramid_zcml 0.9.2 required for with_context function
+
+if PY3:
+    tests_require = []
 else:
-    tests_require= install_requires + ['pyramid_zcml', 'Sphinx', 'docutils', 
-                                       'repoze.sphinx.autointerface']
+    tests_require = ['pyramid_zcml>=0.9.2']
 
 setup(name='pyramid_handlers',
       version='0.4',
@@ -45,6 +47,8 @@ setup(name='pyramid_handlers',
         "Topic :: Internet :: WWW/HTTP",
         "Topic :: Internet :: WWW/HTTP :: WSGI",
         "License :: Repoze Public License",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 2"
         ],
       keywords='web wsgi pylons pyramid',
       author="Chris McDonough, Agendaless Consulting",

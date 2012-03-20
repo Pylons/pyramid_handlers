@@ -1,3 +1,16 @@
+Next release
+------------
+
+- Python 3.2 compatibility (sans ZCML support; ``pyramid_zcml`` does not work
+  under Python 3).
+
+- Removed Python 2.5 compatibility.  This also means Jython compatibility is
+  nonexistent.  If you need Python 2.5 compatibility, use 0.4.
+
+- No longer raises a ConfigurationError when an ``__action_decorator__`` is
+  an instance method (there's no distinction between methods and functions
+  under Python 3).
+
 0.4 (2011-11-25)
 ----------------
 

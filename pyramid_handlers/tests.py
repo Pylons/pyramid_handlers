@@ -1,5 +1,9 @@
+import sys
 import unittest
 from pyramid import testing
+from pyramid.config import Configurator
+
+PY3 = sys.version_info[0] == 3
 
 class Test_add_handler(unittest.TestCase):
     def _makeOne(self, autocommit=True):
@@ -208,8 +212,7 @@ class Test_add_handler(unittest.TestCase):
                 return fn
             def action(self): # pragma: no cover
                 return 'response'
-        from pyramid.exceptions import ConfigurationError
-        self.assertRaises(ConfigurationError, config.add_handler,
+        self.assertRaises(TypeError, config.add_handler,
                           'name', '/{action}', MyHandler)
 
     def test_add_handler_doesnt_mutate_expose_dict(self):
@@ -399,7 +402,7 @@ class Test_add_handler(unittest.TestCase):
         config.add_handler('h1', '/h1', handler=AHandler)
         try:
             config.commit()
-        except Exception, why:
+        except Exception as why:
             c = list(self._conflictFunctions(why))
             self.assertEqual(c[0], 'test_conflict_add_handler')
             self.assertEqual(c[1], 'test_conflict_add_handler')
@@ -412,7 +415,11 @@ class Test_add_handler(unittest.TestCase):
         conflicts = e._conflicts.values()
         for conflict in conflicts:
             for confinst in conflict:
-                yield confinst[2]
+                try:
+                    # pyramid 1.2 
+                    yield confinst[2]
+                except TypeError:
+                    yield confinst.function
 
 class TestActionPredicate(unittest.TestCase):
     def _getTargetClass(self):
@@ -491,53 +498,54 @@ class Test_action(unittest.TestCase):
         self.assertTrue(result is wrapped)
         self.assertEqual(result.__exposed__, [None, {'a':1, 'b':2}])
 
-class TestHandlerDirective(unittest.TestCase):
-    def setUp(self):
-        self.config = testing.setUp(autocommit=False)
-        _ctx = self.config._ctx
-        if _ctx is None: # pragma: no cover ; will never be true under 1.2a5+
-            self.config._ctx = self.config._make_context()
+if not PY3:
+    class TestHandlerDirective(unittest.TestCase):
+        def setUp(self):
+            self.config = testing.setUp(autocommit=False)
+            _ctx = self.config._ctx
+            if _ctx is None: # pragma: no cover ; will never be true under 1.2a5+
+                self.config._ctx = self.config._make_context()
 
-    def tearDown(self):
-        testing.tearDown()
+        def tearDown(self):
+            testing.tearDown()
 
-    def _callFUT(self, *arg, **kw):
-        from pyramid_handlers.zcml import handler
-        return handler(*arg, **kw)
+        def _callFUT(self, *arg, **kw):
+            from pyramid_handlers.zcml import handler
+            return handler(*arg, **kw)
 
-    def test_it(self):
-        from pyramid_handlers import action
-        from zope.interface import Interface
-        from pyramid.interfaces import IView
-        from pyramid.interfaces import IViewClassifier
-        from pyramid.interfaces import IRouteRequest
-        reg = self.config.registry
-        context = DummyZCMLContext(self.config)
-        class Handler(object): # pragma: no cover
-            def __init__(self, request):
-                self.request = request
-            action(renderer='json')
-            def one(self):
-                return 'OK'
-            action(renderer='json')
-            def two(self):
-                return 'OK'
-        self._callFUT(context, 'name', '/:action', Handler)
-        actions = extract_actions(context.actions)
-        _execute_actions(actions)
-        request_type = reg.getUtility(IRouteRequest, 'name')
-        wrapped = reg.adapters.lookup(
-            (IViewClassifier, request_type, Interface), IView, name='')
-        self.assertTrue(wrapped)
+        def test_it(self):
+            from pyramid_handlers import action
+            from zope.interface import Interface
+            from pyramid.interfaces import IView
+            from pyramid.interfaces import IViewClassifier
+            from pyramid.interfaces import IRouteRequest
+            reg = self.config.registry
+            context = DummyZCMLContext(self.config)
+            class Handler(object): # pragma: no cover
+                def __init__(self, request):
+                    self.request = request
+                action(renderer='json')
+                def one(self):
+                    return 'OK'
+                action(renderer='json')
+                def two(self):
+                    return 'OK'
+            self._callFUT(context, 'name', '/:action', Handler)
+            actions = extract_actions(context.actions)
+            _execute_actions(actions)
+            request_type = reg.getUtility(IRouteRequest, 'name')
+            wrapped = reg.adapters.lookup(
+                (IViewClassifier, request_type, Interface), IView, name='')
+            self.assertTrue(wrapped)
 
-    def test_pattern_is_None(self):
-        from pyramid.exceptions import ConfigurationError
+        def test_pattern_is_None(self):
+            from pyramid.exceptions import ConfigurationError
 
-        context = self.config._ctx
-        class Handler(object):
-            pass
-        self.assertRaises(ConfigurationError, self._callFUT,
-                          context, 'name', None, Handler)
+            context = self.config._ctx
+            class Handler(object):
+                pass
+            self.assertRaises(ConfigurationError, self._callFUT,
+                              context, 'name', None, Handler)
 
 
 class Test_includeme(unittest.TestCase):
@@ -547,7 +555,7 @@ class Test_includeme(unittest.TestCase):
         from pyramid_handlers import includeme
         c = Configurator(autocommit=True)
         c.include(includeme)
-        self.assertTrue(c.add_handler.im_func.__docobj__ is add_handler)
+        self.assertTrue(c.add_handler.__func__.__docobj__ is add_handler)
 
 class DummyHandler(object): # pragma: no cover
     def __init__(self, request):
@@ -559,21 +567,36 @@ class DummyHandler(object): # pragma: no cover
     def action2(self):
         return 'response 2'
 
-def extract_actions(native):
+try:
+    from pyramid.config import expand_action
+    dict_actions = True
+except ImportError: # pragma: no cover
     from zope.configuration.config import expand_action
-    L = []
-    for action in native:
-        (discriminator, callable, args, kw, includepath, info, order
-         ) = expand_action(*action)
-        d = {}
-        d['discriminator'] = discriminator
-        d['callable'] = callable
-        d['args'] = args
-        d['kw'] = kw
-        d['order'] = order
-        L.append(d)
-    return L
+    dict_actions = False
 
+if dict_actions:
+    # pyramid 1.Xsomeversion uses dictionary-based actions; the imprecision
+    # of which is because i'm at a sprint and figuring out exactly which
+    # version is less important than keeping things moving, sorry.
+    def extract_actions(native):
+        return native
+
+else:
+    # some other version of pyramid uses tuple-based actions
+    def extract_actions(native): # pragma: no cover
+        L = []
+        for action in native:
+            (discriminator, callable, args, kw, includepath, info, order
+             ) = expand_action(*action)
+            d = {}
+            d['discriminator'] = discriminator
+            d['callable'] = callable
+            d['args'] = args
+            d['kw'] = kw
+            d['order'] = order
+            L.append(d)
+        return L
+    
 def _execute_actions(actions):
     for action in sorted(actions, key=lambda x: x['order']):
         if 'callable' in action:
@@ -581,6 +604,8 @@ def _execute_actions(actions):
                 action['callable']()
 
 class DummyZCMLContext(object):
+    config_class = Configurator
+    introspection = False
     def __init__(self, config):
         if hasattr(config, '_make_context'): # pragma: no cover
             # 1.0, 1.1 b/c

@@ -5,7 +5,14 @@ Configuring a Handler via ZCML
 
 Instead of using the imperative
 :meth:`pyramid.config.Configurator.add_handler` method to add a new
-route, you can alternately use :term:`ZCML`.  :ref:`handler_directive`
+route, you can alternately use :term:`ZCML`.
+
+.. warning::
+
+   ZCML works under Python 2.6 and 2.7; it, however, does not work under
+   Python 3.2 or any other version of Python 3.
+
+:ref:`handler_directive`
 statements in a :term:`ZCML` file used by your application is a sign that
 you're using :term:`URL dispatch`.  For example, the following :term:`ZCML
 declaration` causes a route to be added to the application.
