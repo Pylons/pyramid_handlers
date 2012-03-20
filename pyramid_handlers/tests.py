@@ -353,7 +353,7 @@ class Test_add_handler(unittest.TestCase):
         self._assertRoute(config, 'name', '/{action}', 0)
         self.assertEqual(len(views), 3)
         for view in views:
-            self.assert_('permission' in view)
+            self.assertTrue('permission' in view)
             if view['attr'] == 'action_with_non_default_permission':
                 self.assertEqual(view['permission'], 'different_perm')
             else:
@@ -377,7 +377,7 @@ class Test_add_handler(unittest.TestCase):
         self._assertRoute(config, 'name', '/', 0)
         self.assertEqual(len(views), 2)
         for view in views:
-            self.assert_('permission' in view)
+            self.assertTrue('permission' in view)
             if view['attr'] == 'index':
                 self.assertEqual(view['permission'], 'perm')
             elif view['attr'] == 'index2':
