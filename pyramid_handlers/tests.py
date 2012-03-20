@@ -289,7 +289,6 @@ class Test_add_handler(unittest.TestCase):
         self.assertEqual(view['attr'], 'index')
 
     def test_add_handler_string(self):
-        import pyramid
         views = []
         config = self._makeOne()
         def dummy_add_view(**kw):
