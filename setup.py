@@ -43,7 +43,6 @@ setup(name='pyramid_handlers',
       classifiers=[
         "Intended Audience :: Developers",
         "Programming Language :: Python",
-        "Framework :: Pylons",
         "Topic :: Internet :: WWW/HTTP",
         "Topic :: Internet :: WWW/HTTP :: WSGI",
         "License :: Repoze Public License",
