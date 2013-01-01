@@ -11,7 +11,7 @@ easier to create bundles of view logic which reacts to particular route
 patterns.
 
 ``pyramid_handlers`` works under Python 2.6 and 2.7.  It also works under
-Pyton 3.2, but :term:`ZCML` support is not available under Python 3.2.
+Python 3.2, but :term:`ZCML` support is not available under Python 3.2.
 
 Installation
 ------------
