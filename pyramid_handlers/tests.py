@@ -405,8 +405,6 @@ class Test_add_handler(unittest.TestCase):
             c = list(self._conflictFunctions(why))
             self.assertEqual(c[0], 'test_conflict_add_handler')
             self.assertEqual(c[1], 'test_conflict_add_handler')
-            self.assertEqual(c[2], 'test_conflict_add_handler')
-            self.assertEqual(c[3], 'test_conflict_add_handler')
         else: # pragma: no cover
             raise AssertionError
 
@@ -597,7 +595,14 @@ else:
         return L
     
 def _execute_actions(actions):
+    try:
+        from pyramid.registry import undefer
+    except ImportError: # pragma: no cover
+        def undefer(discriminator):
+            return discriminator
     for action in sorted(actions, key=lambda x: x['order']):
+        discriminator = undefer(action['discriminator'])
+        action['discriminator'] = discriminator
         if 'callable' in action:
             if action['callable']:
                 action['callable']()
