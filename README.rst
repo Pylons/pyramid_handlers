@@ -11,3 +11,4 @@ See `http://docs.pylonsproject.org/projects/pyramid_handlers/en/latest/
 <http://docs.pylonsproject.org/projects/pyramid_handlers/en/latest/>`_ for
 detailed documentation.
 
+See also `Outgrowing Pyramid Handlers <https://michael.merickel.org/2011/8/23/outgrowing-pyramid-handlers/>`_.
