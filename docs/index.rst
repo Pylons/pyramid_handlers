@@ -347,7 +347,7 @@ special exception and returns a response.
            raise MySpecialException
 
 When the ``index`` method of the above example handler is invoked, it will
-raise ``MySpecialException``.  As a result, the action decorator will cath
+raise ``MySpecialException``.  As a result, the action decorator will catch
 this exception and turn it into a response.
 
 Configuration Knobs
