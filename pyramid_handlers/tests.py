@@ -418,6 +418,28 @@ class Test_add_handler(unittest.TestCase):
                 except TypeError:
                     yield confinst.function
 
+
+
+    def test_add_handler_with_default_action(self):
+        config = self._makeOne()
+        class DummyHandler(object):
+            def index(self): pass
+            index.__exposed__ = [{'a':'1'}]
+        views = []
+        def dummy_add_view(**kw):
+            views.append(kw)
+        config.add_view = dummy_add_view
+        config.add_handler('name', '/abc/:action', DummyHandler, default_action='index')
+        self.assertEqual(len(views), 2)
+        for view in views:
+            self.assertEqual(view['a'], '1')
+            self.assertEqual(view['attr'], 'index')
+            self.assertIn(view['route_name'], ['name-default_action','name'])
+            self.assertEqual(view['view'], DummyHandler)
+
+
+
+
 class TestActionPredicate(unittest.TestCase):
     def _getTargetClass(self):
         from pyramid_handlers import ActionPredicate
